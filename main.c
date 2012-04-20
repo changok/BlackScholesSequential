@@ -67,7 +67,7 @@ main (int argc, char* argv[])
    * the max of all the prng_stream_spawn_times, or just take a representative
    * sample... 
    */
-  black_scholes (&interval, &prng_stream_spawn_time, S, E, r, sigma, T, M);
+  black_scholes (&interval, &prng_stream_spawn_time, S, E, r, sigma, T, M, nthreads);
   t2 = get_seconds ();
 
   /*
@@ -88,6 +88,7 @@ main (int argc, char* argv[])
   printf ("Total simulation time: %g seconds\n", t2 - t1);
   printf ("PRNG stream spawn time: %g seconds\n", prng_stream_spawn_time);
 
+  //pthread_exit(NULL); 
   return 0;
 }
 

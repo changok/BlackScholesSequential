@@ -8,7 +8,12 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 
+// shared mean for threads
+//double total_stocks = 0;
+double shared_mean = 0;
+pthread_mutex_t m;
 
 /**
  * This function is what you compute for each iteration of
@@ -58,6 +63,128 @@ black_scholes_stddev (void* the_args)
   return sqrt (variance);
 }
 
+
+// Created by Okido: thread kernel
+void*
+black_scholes_thread (void* the_args)
+{
+  wrapper_black_scholes_args_t* wargs = (wrapper_black_scholes_args_t*)the_args;
+  black_scholes_args_t* args = wargs->black_sh;
+
+  /* Unpack the IN/OUT struct */
+
+  /* IN (read-only) parameters */
+  const int S = args->S; 
+  const int E = args->E;
+  const int M = args->M;
+  const double r = args->r;
+  const double sigma = args->sigma;
+  const double T = args->T;
+  
+  const int nthreads = args->nthreads;
+  // pid : thread id
+  const int pid = wargs->pid; 
+
+  /* OUT (write-only) parameters */
+  double* trials = args->trials;
+  
+  // thread local part
+  double mean = 0.0;
+
+  /* Temporary variables */
+  gaussrand_state_t gaussrand_state;
+  void* prng_stream = NULL; 
+  int k;
+  double t0, t1;
+
+  /* Spawn a random number generator */
+  t0 = get_seconds ();
+
+  prng_stream = spawn_prng_stream (pid); // pid
+
+  t1 = get_seconds ();
+  args->prng_stream_spawn_time = t1 - t0;
+
+  /* Initialize the Gaussian random number module for this thread */
+  init_gaussrand_state (&gaussrand_state);
+  
+  /* Do the Black-Scholes iterations */
+  
+  // M/nthreads
+  for (k = 0; k < M/nthreads; k++)
+    {
+      const double gaussian_random_number = gaussrand1 (&uniform_random_double,
+							prng_stream,
+							&gaussrand_state);
+      // pad : pid * nthreads
+      int pad = pid * nthreads;
+      trials[k + pad] = black_scholes_value (S, E, r, sigma, T, 
+				       gaussian_random_number);
+
+      /*
+       * We scale each term of the sum in order to avoid overflow. 
+       * This ensures that mean is never larger than the max
+       * element of trials[0 .. M-1].
+       */
+      mean += trials[k + pad] / ((double) M/ (double) nthreads);
+    }
+
+  /* Pack the OUT values into the args struct */
+
+  double* means = wargs->thread_means;
+  means[pid] = mean;
+  //shared_mean += mean;
+  
+  /* 
+   * We do the standard deviation computation as a second operation.
+   */
+
+  free_prng_stream (prng_stream);
+  return NULL;
+}
+
+static void*
+black_scholes_kernel (void* the_args)
+{
+  puts("passed1");
+  int i;
+  black_scholes_args_t* args = (black_scholes_args_t*) the_args;
+
+  puts("passed2");
+  wrapper_black_scholes_args_t wargs;
+  wargs.black_sh = args;
+  int nthreads = args->nthreads;
+  
+  pthread_t *threads = (pthread_t*)malloc(sizeof(pthread_t) * nthreads);
+  wargs.thread_means = (double*)malloc(sizeof(double)*nthreads);
+  // create threads
+  for (i = 0; i < nthreads; i++) {
+    wargs.pid = i;
+    pthread_create(&threads[i], NULL, &black_scholes_thread, &wargs);
+  } 
+
+  // join threads: barrier
+  for (i = 0; i < nthreads; i++) {
+    pthread_join(threads[i], NULL);
+  }
+
+  // combine results from each threads
+  for (i = 0; i < nthreads; i++) {
+    args->mean += (wargs.thread_means)[i];
+  }
+  // calculate average
+  args->mean /= nthreads;
+
+  puts("passed3");
+  // free the memories
+  puts("passed4");
+  free(threads);
+  puts("passed5");
+  free(wargs.thread_means);
+  puts("passed6");
+  //pthread_exit((void*)threads);
+  return NULL;
+}
 
 /**
  * Take a pointer to a black_scholes_args_t struct, and return NULL.
@@ -137,8 +264,10 @@ black_scholes (confidence_interval_t* interval,
 	       const double r,
 	       const double sigma,
 	       const double T,
-	       const int M)
+	       const int M,
+               const int nthreads)
 {
+  //puts("passed");
   black_scholes_args_t args;
   double mean = 0.0;
   double stddev = 0.0;
@@ -158,8 +287,10 @@ black_scholes (confidence_interval_t* interval,
   args.trials = trials;
   args.mean = 0.0;
   args.variance = 0.0;
+  args.nthreads = nthreads;
 
-  (void) black_scholes_iterate (&args);
+  (void) black_scholes_kernel (&args);
+  //(void) black_scholes_iterate (&args);
   mean = args.mean;
   stddev = black_scholes_stddev (&args);
 
