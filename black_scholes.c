@@ -139,7 +139,7 @@ black_scholes_thread (void* the_args)
        * This ensures that mean is never larger than the max
        * element of trials[0 .. M-1].
        */
-      mean += trials[k + pad] / ((double) M/ (double) nthreads);
+      mean += trials[k + pad];// / ((double) M/ (double) nthreads);
     }
 
   /* Pack the OUT values into the args struct */
@@ -163,16 +163,18 @@ black_scholes_kernel (void* the_args)
   int i;
   black_scholes_args_t* args = (black_scholes_args_t*) the_args;
 
-  wrapper_black_scholes_args_t wargs;
-  wargs.black_sh = args;
   int nthreads = args->nthreads;
-  
+  double* thread_means = (double*)malloc(sizeof(double)*nthreads);
   pthread_t *threads = (pthread_t*)malloc(sizeof(pthread_t) * nthreads);
-  wargs.thread_means = (double*)malloc(sizeof(double)*nthreads);
+  wrapper_black_scholes_args_t* wargs_arr = (wrapper_black_scholes_args_t*)malloc(sizeof(wrapper_black_scholes_args_t)*nthreads);
+
   // create threads
   for (i = 0; i < nthreads; i++) {
-    wargs.pid = i;
-    pthread_create(&threads[i], NULL, &black_scholes_thread, &wargs);
+    wargs_arr[i].black_sh = args;
+    wargs_arr[i].pid = i;
+    wargs_arr[i].thread_means = thread_means;
+
+    pthread_create(&threads[i], NULL, &black_scholes_thread, &(wargs_arr[i]));
   } 
 
   // join threads: barrier
@@ -182,14 +184,16 @@ black_scholes_kernel (void* the_args)
 
   // combine results from each threads
   for (i = 0; i < nthreads; i++) {
-    args->mean += (wargs.thread_means)[i];
+    args->mean += thread_means[i];
+    printf("%f\n", thread_means[i]);
   }
   // calculate average
-  args->mean /= nthreads;
+  args->mean /= args->M;
 
   // free the memories
   free(threads);
-  free(wargs.thread_means);
+  free(thread_means);
+  free(wargs_arr);
   return NULL;
 }
 
