@@ -1,5 +1,6 @@
 #ifndef _timer_h
 #define _timer_h
+#include <stdio.h>
 
 /**
  * Call this in the master thread before you create any other threads,

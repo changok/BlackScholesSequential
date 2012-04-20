@@ -1,11 +1,12 @@
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "black_scholes.h"
 #include "parser.h"
 #include "random.h"
 #include "timer.h"
 
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 /**
  * Usage: ./hw1.x <filename> <nthreads>
