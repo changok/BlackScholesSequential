@@ -88,7 +88,6 @@ main (int argc, char* argv[])
   printf ("Total simulation time: %g seconds\n", t2 - t1);
   printf ("PRNG stream spawn time: %g seconds\n", prng_stream_spawn_time);
 
-  //pthread_exit(NULL); 
   return 0;
 }
 

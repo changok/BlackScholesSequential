@@ -141,16 +141,15 @@ black_scholes_thread (void* the_args)
 
   free_prng_stream (prng_stream);
   return NULL;
+  pthread_exit(NULL);
 }
 
 static void*
 black_scholes_kernel (void* the_args)
 {
-  puts("passed1");
   int i;
   black_scholes_args_t* args = (black_scholes_args_t*) the_args;
 
-  puts("passed2");
   wrapper_black_scholes_args_t wargs;
   wargs.black_sh = args;
   int nthreads = args->nthreads;
@@ -175,14 +174,9 @@ black_scholes_kernel (void* the_args)
   // calculate average
   args->mean /= nthreads;
 
-  puts("passed3");
   // free the memories
-  puts("passed4");
   free(threads);
-  puts("passed5");
   free(wargs.thread_means);
-  puts("passed6");
-  //pthread_exit((void*)threads);
   return NULL;
 }
 
