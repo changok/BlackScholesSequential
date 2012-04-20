@@ -1,5 +1,6 @@
 #include "black_scholes.h"
 #include "gaussian.h"
+#include "mock_gaussian.h"
 #include "random.h" 
 #include "timer.h"
 #include "util.h"
@@ -9,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern rnd_mode;
 
 /**
  * This function is what you compute for each iteration of
@@ -102,9 +104,26 @@ black_scholes_iterate (void* the_args)
   /* Do the Black-Scholes iterations */
   for (k = 0; k < M; k++)
     {
-      const double gaussian_random_number = gaussrand1 (&uniform_random_double,
-							prng_stream,
-							&gaussrand_state);
+        double gaussian_random_number;
+
+        if(rnd_mode == 2) {
+          gaussian_random_number = gaussrand_pre_generated (&uniform_random_double,
+                                      prng_stream,
+                                      &gaussrand_state);
+        } else if(rnd_mode == 1) {
+            gaussian_random_number = gaussrand_only1 (&uniform_random_double,
+                                    prng_stream,
+                                    &gaussrand_state);
+        } else {
+            gaussian_random_number = gaussrand1 (&uniform_random_double,
+                                prng_stream,
+                                &gaussrand_state);
+        }
+
+//      const double gaussian_random_number = gaussrand_func (&uniform_random_double,
+//							prng_stream,
+//							&gaussrand_state);
+
       trials[k] = black_scholes_value (S, E, r, sigma, T, 
 				       gaussian_random_number);
 
@@ -160,6 +179,7 @@ black_scholes (confidence_interval_t* interval,
   args.variance = 0.0;
 
   (void) black_scholes_iterate (&args);
+
   mean = args.mean;
   stddev = black_scholes_stddev (&args);
 
