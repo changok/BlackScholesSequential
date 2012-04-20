@@ -31,7 +31,7 @@ all: hw1.x
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 hw1.x: $(HW1_C_OBJS) dcmt0.4/lib/libdcmt.$(DYLIB_SUFFIX)
-	$(LINKER) $(CFLAGS) $(HW1_C_OBJS) -o $@ $(LDFLAGS)  
+	$(LINKER) $(CFLAGS) $(HW1_C_OBJS) -o $@ $(LDFLAGS)
 
 dcmt0.4/lib/libdcmt.$(DYLIB_SUFFIX):
 	make -C dcmt0.4/lib
