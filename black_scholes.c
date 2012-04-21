@@ -36,6 +36,19 @@ black_scholes_value (const double S,
   /* return exp (-r * T) * max_double (current_value - E, 0.0); */
 }
 
+static inline double 
+mock_black_scholes_value (const double S,
+		     const double E,
+		     const double r,
+		     const double sigma,
+		     const double T,
+		     const double gaussian_random_number)
+{
+  //const double current_value = S * gaussian_random_number;
+  //return  ((current_value - E < 0.0) ? 0.0 : current_value - E);
+  return  gaussian_random_number;
+  /* return exp (-r * T) * max_double (current_value - E, 0.0); */
+}
 
 /**
  * Compute the standard deviation of trials[0 .. M-1].
@@ -130,23 +143,23 @@ black_scholes_thread (void* the_args)
       }
 
       // pad : pid * nthreads
-      int pad = pid * nthreads;
-      trials[k + pad] = black_scholes_value (S, E, r, sigma, T, 
+      int pad = pid * (M/nthreads);
+      int trial = 0;
+      trial = black_scholes_value (S, E, r, sigma, T, 
 				       gaussian_random_number);
-
+      trials[k + pad] = trial;
       /*
        * We scale each term of the sum in order to avoid overflow. 
        * This ensures that mean is never larger than the max
        * element of trials[0 .. M-1].
        */
-      mean += trials[k + pad];// / ((double) M/ (double) nthreads);
+      mean += trials[k + pad] /(double)M;// / ((double) M/ (double) nthreads);
     }
 
   /* Pack the OUT values into the args struct */
 
   double* means = wargs->thread_means;
   means[pid] = mean;
-  //shared_mean += mean;
   
   /* 
    * We do the standard deviation computation as a second operation.
@@ -185,10 +198,9 @@ black_scholes_kernel (void* the_args)
   // combine results from each threads
   for (i = 0; i < nthreads; i++) {
     args->mean += thread_means[i];
-    printf("%f\n", thread_means[i]);
   }
   // calculate average
-  args->mean /= args->M;
+  //args->mean /= args->M;
 
   // free the memories
   free(threads);
@@ -233,7 +245,9 @@ black_scholes (confidence_interval_t* interval,
 
   (void) black_scholes_kernel (&args);
   mean = args.mean;
+printf("mean: %.60lf\n", mean);
   stddev = black_scholes_stddev (&args);
+printf("stddev: %.60lf\n", stddev);
 
   conf_width = 1.96 * stddev / sqrt ((double) M);
   interval->min = mean - conf_width;

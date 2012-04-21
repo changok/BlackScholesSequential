@@ -80,6 +80,7 @@ main (int argc, char* argv[])
    * double quotes) is that the C preprocessor automatically
    * concatenates them if they are separated only by whitespace.
    */
+
   printf ("Black-Scholes benchmark:\n"
 	  "------------------------\n"
 	  "S        %g\n"
@@ -92,7 +93,6 @@ main (int argc, char* argv[])
   printf ("Confidence interval: (%g, %g)\n", interval.min, interval.max);
   printf ("Total simulation time: %g seconds\n", t2 - t1);
   printf ("PRNG stream spawn time: %g seconds\n", prng_stream_spawn_time);
-
   return 0;
 }
 
