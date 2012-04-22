@@ -89,7 +89,7 @@ black_scholes_thread (void* the_args)
   /* IN (read-only) parameters */
   const int S = args->S; 
   const int E = args->E;
-  const int M = args->M;
+  const long M = args->M;
   const double r = args->r;
   const double sigma = args->sigma;
   const double T = args->T;
@@ -218,7 +218,7 @@ black_scholes (confidence_interval_t* interval,
 	       const double r,
 	       const double sigma,
 	       const double T,
-	       const int M,
+	       const long M,
                const int nthreads)
 {
   //puts("passed");

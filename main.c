@@ -35,7 +35,7 @@ main (int argc, char* argv[])
 {
   confidence_interval_t interval;
   double S, E, r, sigma, T;
-  int M = 0;
+  long M = 0;
   char* filename = NULL;
   int nthreads = 1;
   double t1, t2, prng_stream_spawn_time;
