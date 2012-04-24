@@ -29,10 +29,11 @@ black_scholes_value (const double S,
 		     const double T,
 		     const double gaussian_random_number)
 {
-  const double current_value = S * exp ( (r - (sigma*sigma) / 2.0) * T + 
-					 sigma * sqrt (T) * gaussian_random_number );
-  return exp (-r * T) * 
-    ((current_value - E < 0.0) ? 0.0 : current_value - E);
+  const double current_value = S * exp ( (r - ((sigma*sigma)*0.5)) * T + sigma * sqrt (T) * gaussian_random_number );
+//double re = exp (-r * T) * ((current_value - E < 0.0) ? 0.0 : current_value - E);
+//printf("in bs_value: %lf\n", re);
+//  return re;
+  return exp (-r * T) * ((current_value - E < 0.0) ? 0.0 : current_value - E);
   /* return exp (-r * T) * max_double (current_value - E, 0.0); */
 }
 
@@ -69,7 +70,7 @@ black_scholes_stddev (void* the_args)
        * Just like when computing the mean, we scale each term of this
        * sum in order to avoid overflow.
        */
-      variance += diff * diff / (double) M;
+      variance += diff * diff / (double) (M-1);
     }
 
   args->variance = variance;
@@ -147,15 +148,24 @@ black_scholes_thread (void* the_args)
       int trial = 0;
       trial = black_scholes_value (S, E, r, sigma, T, 
 				       gaussian_random_number);
+
+// error found: somehow floating type turns out to be integer type
+// lost floating number under .0
+printf("trial: %f\n", (double)trial);
       trials[k + pad] = trial;
       /*
        * We scale each term of the sum in order to avoid overflow. 
        * This ensures that mean is never larger than the max
        * element of trials[0 .. M-1].
        */
-      mean += trials[k + pad] /(double)M;// / ((double) M/ (double) nthreads);
+      mean = mean + (double)trials[k + pad] /(double)M;// / ((double) M/ (double) nthreads);
+
+printf("trials[k+pad]: %f\n", (double)trials[k+pad]);
+printf("in thread<trial/M>: %f\n", (double)trials[k+pad]/(double)M);
+printf("in thread<in>(mean): %f\n", (double)mean);
     }
 
+printf("in thread<out>(mean): %f\n", mean);
   /* Pack the OUT values into the args struct */
 
   double* means = wargs->thread_means;
@@ -197,8 +207,10 @@ black_scholes_kernel (void* the_args)
 
   // combine results from each threads
   for (i = 0; i < nthreads; i++) {
+printf("thread_mean: %lf\n", thread_means[i]);
     args->mean += thread_means[i];
   }
+
   // calculate average
   //args->mean /= args->M;
 
@@ -257,6 +269,7 @@ printf("stddev: %.60lf\n", stddev);
   /* Clean up and exit */
     
   deinit_black_scholes_args (&args);
+  free(args.trials);
 }
 
 
