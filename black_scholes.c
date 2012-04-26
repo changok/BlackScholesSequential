@@ -144,13 +144,13 @@ black_scholes_thread (void* the_args)
 
       // pad : pid * nthreads
       int pad = pid * (M/nthreads);
-      int trial = 0;
+      double trial = 0;
       trial = black_scholes_value (S, E, r, sigma, T, 
 				       gaussian_random_number);
 
 // error found: somehow floating type turns out to be integer type
 // lost floating number under .0
-printf("trial: %f\n", (double)trial);
+//printf("trial: %f\n", (double)trial);
       trials[k + pad] = trial;
       /*
        * We scale each term of the sum in order to avoid overflow. 
@@ -159,12 +159,12 @@ printf("trial: %f\n", (double)trial);
        */
       mean = mean + (double)trials[k + pad] /(double)M;// / ((double) M/ (double) nthreads);
 
-printf("trials[k+pad]: %f\n", (double)trials[k+pad]);
-printf("in thread<trial/M>: %f\n", (double)trials[k+pad]/(double)M);
-printf("in thread<in>(mean): %f\n", (double)mean);
+//printf("trials[k+pad]: %f\n", (double)trials[k+pad]);
+//printf("in thread<trial/M>: %f\n", (double)trials[k+pad]/(double)M);
+//printf("in thread<in>(mean): %f\n", (double)mean);
     }
 
-printf("in thread<out>(mean): %f\n", mean);
+//printf("in thread<out>(mean): %f\n", mean);
   /* Pack the OUT values into the args struct */
 
   double* means = wargs->thread_means;
