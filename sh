@@ -122,17 +122,14 @@ black_scholes_thread (void* the_args)
   init_gaussrand_state (&gaussrand_state);
   
   /* Do the Black-Scholes iterations */
-
-  double* fixedRands = wargs->fixed_rands;  
-  const int gid = pid*(M/nthreads);
-  assert (M%nthreads == 0);
+  
   // M/nthreads
   for (k = 0; k < M/nthreads; k++)
     {
       double gaussian_random_number;
 
       if(rnd_mode == 2) {
-          gaussian_random_number = fixedRands[gid+k];
+        gaussian_random_number = pre_generated_rands (&uniform_random_double, prng_stream,&gaussrand_state);
       } else if(rnd_mode == 1) {
           gaussian_random_number = mock_gaussrand_only1 ();
       } else {
@@ -170,7 +167,7 @@ black_scholes_thread (void* the_args)
 }
 
 static void*
-black_scholes_kernel (void* the_args, double* fixedRands)
+black_scholes_kernel (void* the_args)
 {
   int i;
   black_scholes_args_t* args = (black_scholes_args_t*) the_args;
@@ -185,7 +182,6 @@ black_scholes_kernel (void* the_args, double* fixedRands)
     wargs_arr[i].black_sh = args;
     wargs_arr[i].pid = i;
     wargs_arr[i].thread_means = thread_means;
-    wargs_arr[i].fixed_rands = fixedRands;
 
     pthread_create(&threads[i], NULL, &black_scholes_thread, &(wargs_arr[i]));
   } 
@@ -219,8 +215,7 @@ black_scholes (confidence_interval_t* interval,
 	       const double sigma,
 	       const double T,
 	       const long M,
-               const int nthreads,
-	       double* fixedRands)
+               const int nthreads)
 {
   //puts("passed");
   black_scholes_args_t args;
@@ -244,7 +239,7 @@ black_scholes (confidence_interval_t* interval,
   args.variance = 0.0;
   args.nthreads = nthreads;
 
-  (void) black_scholes_kernel (&args, fixedRands);
+  (void) black_scholes_kernel (&args);
   mean = args.mean;
 printf("mean: %.60lf\n", mean);
   stddev = black_scholes_stddev (&args);

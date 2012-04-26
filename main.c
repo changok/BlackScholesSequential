@@ -39,6 +39,7 @@ main (int argc, char* argv[])
   char* filename = NULL;
   int nthreads = 1;
   double t1, t2, prng_stream_spawn_time;
+  int i;
   
   if (argc < 3)
     {
@@ -50,8 +51,37 @@ main (int argc, char* argv[])
   nthreads = to_int (argv[2]);
   parse_parameters (&S, &E, &r, &sigma, &T, &M, filename);
 
+  /* rearrange nthread and M(trials) 
+   * for the further use, we arrange M based on the number of threads
+   * if M is not, or less than nthreads.
+   * */
+  if (M < 256) {
+	  printf("Trials(M) is less than minimum requirement, 256,"
+	         "So, we increase M to 256\n");
+	  M = 256;
+  }
+  if (nthreads > M) {
+	  printf("The number of threads is exceed to M"
+	         "So, we set it to M\n");
+	  nthreads = M;
+  }
+  if (M % nthreads) {
+	M = (M/nthreads+1)*nthreads;
+	printf("nthreads and M is not balanced"
+	       "So, we rebalance M to muliple of nthreads\n"
+	       "M: %ld, nthreads: %d\n", M, nthreads);
+  }
+
   if(argc == 4) {
       rnd_mode = to_int(argv[3]);
+  }
+
+  /*
+   * generate pre-generated random numbers
+   * */
+  double* preRands = (double*)malloc (sizeof (double) * M);
+  for (i = 0; i < M; i++) {
+    preRands[i] = i/(double)M;
   }
 
   /* 
@@ -72,7 +102,7 @@ main (int argc, char* argv[])
    * the max of all the prng_stream_spawn_times, or just take a representative
    * sample... 
    */
-  black_scholes (&interval, &prng_stream_spawn_time, S, E, r, sigma, T, M, nthreads);
+  black_scholes (&interval, &prng_stream_spawn_time, S, E, r, sigma, T, M, nthreads, preRands);
   t2 = get_seconds ();
 
   /*
@@ -88,11 +118,15 @@ main (int argc, char* argv[])
 	  "r        %g\n"
 	  "sigma    %g\n"
 	  "T        %g\n"
-	  "M        %d\n",
+	  "M        %ld\n",
 	  S, E, r, sigma, T, M);
   printf ("Confidence interval: (%g, %g)\n", interval.min, interval.max);
   printf ("Total simulation time: %g seconds\n", t2 - t1);
   printf ("PRNG stream spawn time: %g seconds\n", prng_stream_spawn_time);
+ 
+  for (i = 0; i < M; i++) {
+    free(preRands+i);
+  } 
   return 0;
 }
 

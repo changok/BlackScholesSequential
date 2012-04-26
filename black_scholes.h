@@ -71,6 +71,7 @@ typedef struct __wrapper_black_scholes_args_t {
   int nthreads;
   int mod;
   double* thread_means;
+  double* fixed_rands;
 } wrapper_black_scholes_args_t;
 
 /**
@@ -110,7 +111,8 @@ black_scholes (confidence_interval_t* interval,
 	       const double sigma,
 	       const double T,
 	       const long M,
-               const int nthreads);
+               const int nthreads,
+	       double* fixedRands);
 
 
 #endif /* _black_scholes_h */
