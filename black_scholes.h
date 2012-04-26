@@ -37,7 +37,7 @@ typedef struct __black_scholes_args_t {
   /**
    * [IN] Number of Black-Scholes MC iterations.  
    */
-  int M;
+  long M;
   /**
    * [OUT] Array (of M elements) containing the results of each of the
    * M trials.
@@ -71,6 +71,7 @@ typedef struct __wrapper_black_scholes_args_t {
   int nthreads;
   int mod;
   double* thread_means;
+  double* fixed_rands;
 } wrapper_black_scholes_args_t;
 
 /**
@@ -109,8 +110,9 @@ black_scholes (confidence_interval_t* interval,
 	       const double r,
 	       const double sigma,
 	       const double T,
-	       const int M,
-               const int nthreads);
+	       const long M,
+               const int nthreads,
+	       double* fixedRands);
 
 
 #endif /* _black_scholes_h */

@@ -13,7 +13,7 @@ parse_parameters (double* S,
 		  double* r, 
 		  double* sigma, 
 		  double* T, 
-		  int* M, 
+		  long* M,
 		  const char* filename);
 
 #endif /* _parser_h */

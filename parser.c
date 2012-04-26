@@ -42,7 +42,7 @@ parse_parameters (double* S,
 		  double* r, 
 		  double* sigma, 
 		  double* T, 
-		  int* M, 
+		  long* M,
 		  const char* filename)
 {
   char line[400];
