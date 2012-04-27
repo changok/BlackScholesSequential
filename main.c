@@ -7,7 +7,7 @@
 #include "random.h"
 #include "timer.h"
 
-extern rnd_mode = 0;
+extern int rnd_mode = 0;
 
 /**
  * Usage: ./hw1.x <filename> <nthreads>
@@ -48,11 +48,12 @@ main (int argc, char* argv[])
       exit (EXIT_FAILURE);
     }
   filename = argv[1];
-  M = to_long (argv[2]);
   nthreads = to_int (argv[3]);
   rnd_mode = to_int(argv[4]);
 
   parse_parameters (&S, &E, &r, &sigma, &T, &M, filename);
+
+  M = to_long (argv[2]);
 
   /* rearrange nthread and M(trials) 
    * for the further use, we arrange M based on the number of threads
