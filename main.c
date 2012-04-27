@@ -41,14 +41,17 @@ main (int argc, char* argv[])
   double t1, t2, prng_stream_spawn_time;
   int i;
   
-  if (argc < 3)
+  if (argc < 5)
     {
       fprintf (stderr, 
-	       "Usage: ./hw1.x <filename> <nthreads> [rnd_mode]\n\n");
+	       "Usage: ./hw1.x <filename> <trials:M>  <nthreads> [rnd_mode]\n\n");
       exit (EXIT_FAILURE);
     }
   filename = argv[1];
-  nthreads = to_int (argv[2]);
+  M = to_long (argv[2]);
+  nthreads = to_int (argv[3]);
+  rnd_mode = to_int(argv[4]);
+
   parse_parameters (&S, &E, &r, &sigma, &T, &M, filename);
 
   /* rearrange nthread and M(trials) 
@@ -72,9 +75,6 @@ main (int argc, char* argv[])
 	       "M: %ld, nthreads: %d\n", M, nthreads);
   }
 
-  if(argc == 4) {
-      rnd_mode = to_int(argv[3]);
-  }
 
   /*
    * generate pre-generated random numbers
@@ -102,7 +102,8 @@ main (int argc, char* argv[])
    * the max of all the prng_stream_spawn_times, or just take a representative
    * sample... 
    */
-  black_scholes (&interval, &prng_stream_spawn_time, S, E, r, sigma, T, M, nthreads, preRands);
+  black_scholes (&interval, &prng_stream_spawn_time,
+                  S, E, r, sigma, T, M, nthreads, preRands);
   t2 = get_seconds ();
 
   /*

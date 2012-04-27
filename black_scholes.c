@@ -13,7 +13,7 @@
 
 double shared_mean = 0;
 pthread_mutex_t m;
-extern rnd_mode;
+extern int rnd_mode;
 
 /**
  * This function is what you compute for each iteration of
@@ -207,7 +207,7 @@ black_scholes_kernel (void* the_args, double* fixedRands)
 
   // combine results from each threads
   for (i = 0; i < nthreads; i++) {
-printf("thread_mean: %lf\n", thread_means[i]);
+printf("thread_mean: %.5lf\n", thread_means[i]);
     args->mean += thread_means[i];
   }
 
@@ -258,9 +258,9 @@ black_scholes (confidence_interval_t* interval,
 
   (void) black_scholes_kernel (&args, fixedRands);
   mean = args.mean;
-printf("mean: %.60lf\n", mean);
+printf("mean: %.5lf\n", mean);
   stddev = black_scholes_stddev (&args);
-printf("stddev: %.60lf\n", stddev);
+printf("stddev: %.5lf\n", stddev);
 
   conf_width = 1.96 * stddev / sqrt ((double) M);
   interval->min = mean - conf_width;
