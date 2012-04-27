@@ -23,32 +23,25 @@ extern int rnd_mode;
  */
 static inline double 
 black_scholes_value (const double S,
-		     const double E,
-		     const double r,
-		     const double sigma,
-		     const double T,
-		     const double gaussian_random_number)
+                     const double E,
+                     const double r,
+                     const double sigma,
+                     const double T,
+                     const double gaussian_random_number)
 {
   const double current_value = S * exp ( (r - ((sigma*sigma)*0.5)) * T + sigma * sqrt (T) * gaussian_random_number );
-//double re = exp (-r * T) * ((current_value - E < 0.0) ? 0.0 : current_value - E);
-//printf("in bs_value: %lf\n", re);
-//  return re;
   return exp (-r * T) * ((current_value - E < 0.0) ? 0.0 : current_value - E);
-  /* return exp (-r * T) * max_double (current_value - E, 0.0); */
 }
 
 static inline double 
 mock_black_scholes_value (const double S,
-		     const double E,
-		     const double r,
-		     const double sigma,
-		     const double T,
-		     const double gaussian_random_number)
+                          const double E,
+                          const double r,
+                          const double sigma,
+                          const double T,
+                          const double gaussian_random_number)
 {
-  //const double current_value = S * gaussian_random_number;
-  //return  ((current_value - E < 0.0) ? 0.0 : current_value - E);
   return  gaussian_random_number;
-  /* return exp (-r * T) * max_double (current_value - E, 0.0); */
 }
 
 /**
@@ -109,15 +102,10 @@ black_scholes_thread (void* the_args)
   gaussrand_state_t gaussrand_state;
   void* prng_stream = NULL; 
   int k;
-  double t0, t1;
+  //double t0, t1;
 
   /* Spawn a random number generator */
-  t0 = get_seconds ();
-
-  prng_stream = spawn_prng_stream (pid); // pid
-
-  t1 = get_seconds ();
-  args->prng_stream_spawn_time = t1 - t0;
+  prng_stream = args->prng_stream[pid];//spawn_prng_stream (pid); // pid
 
   /* Initialize the Gaussian random number module for this thread */
   init_gaussrand_state (&gaussrand_state);
@@ -137,7 +125,8 @@ black_scholes_thread (void* the_args)
       } else if(rnd_mode == 1) {
           gaussian_random_number = mock_gaussrand_only1 ();
       } else {
-          gaussian_random_number = gaussrand1 (&uniform_random_double,
+          gaussian_random_number = gaussrand1 (
+                              &uniform_random_double,
                               prng_stream,
                               &gaussrand_state);
       }
@@ -145,26 +134,23 @@ black_scholes_thread (void* the_args)
       // pad : pid * nthreads
       int pad = pid * (M/nthreads);
       double trial = 0;
-      trial = black_scholes_value (S, E, r, sigma, T, 
-				       gaussian_random_number);
+      trial = black_scholes_value (S, 
+                                   E, 
+                                   r, 
+                                   sigma, 
+                                   T, 
+                                   gaussian_random_number);
 
-// error found: somehow floating type turns out to be integer type
-// lost floating number under .0
-//printf("trial: %f\n", (double)trial);
+      // error found: somehow floating type turns out to be integer type
+      // lost floating number under .0
       trials[k + pad] = trial;
       /*
        * We scale each term of the sum in order to avoid overflow. 
        * This ensures that mean is never larger than the max
        * element of trials[0 .. M-1].
        */
-      mean = mean + (double)trials[k + pad] /(double)M;// / ((double) M/ (double) nthreads);
-
-//printf("trials[k+pad]: %f\n", (double)trials[k+pad]);
-//printf("in thread<trial/M>: %f\n", (double)trials[k+pad]/(double)M);
-//printf("in thread<in>(mean): %f\n", (double)mean);
+      mean = mean + (double)trials[k + pad] /(double)M;
     }
-
-//printf("in thread<out>(mean): %f\n", mean);
   /* Pack the OUT values into the args struct */
 
   double* means = wargs->thread_means;
@@ -207,12 +193,9 @@ black_scholes_kernel (void* the_args, double* fixedRands)
 
   // combine results from each threads
   for (i = 0; i < nthreads; i++) {
-printf("thread_mean: %.5lf\n", thread_means[i]);
+    printf("thread_mean[%d]: %.5lf\n", i, thread_means[i]);
     args->mean += thread_means[i];
   }
-
-  // calculate average
-  //args->mean /= args->M;
 
   // free the memories
   free(threads);
@@ -224,17 +207,16 @@ printf("thread_mean: %.5lf\n", thread_means[i]);
 
 void
 black_scholes (confidence_interval_t* interval,
-	       double* prng_stream_spawn_time,
-	       const double S,
-	       const double E,
-	       const double r,
-	       const double sigma,
-	       const double T,
-	       const long M,
-               const int nthreads,
-	       double* fixedRands)
+          const double S,
+          const double E,
+          const double r,
+          const double sigma,
+          const double T,
+          const long M,
+          const int nthreads,
+          double* fixedRands,
+          void** prng_stream)
 {
-  //puts("passed");
   black_scholes_args_t args;
   double mean = 0.0;
   double stddev = 0.0;
@@ -243,7 +225,11 @@ black_scholes (confidence_interval_t* interval,
 
   assert (M > 0);
   trials = (double*) malloc (M * sizeof (double));
-  assert (trials != NULL);
+  if (trials == NULL) {
+    printf("ERROR: Cannot allocate size of memory: %ld\n"
+           "Begin with smaller size of M.\n", sizeof(double)*M);
+    exit(1);
+  }
 
   args.S = S;
   args.E = E;
@@ -255,17 +241,17 @@ black_scholes (confidence_interval_t* interval,
   args.mean = 0.0;
   args.variance = 0.0;
   args.nthreads = nthreads;
+  args.prng_stream = prng_stream;
 
   (void) black_scholes_kernel (&args, fixedRands);
   mean = args.mean;
-printf("mean: %.5lf\n", mean);
+  printf("mean: %.5lf\n", mean);
   stddev = black_scholes_stddev (&args);
-printf("stddev: %.5lf\n", stddev);
+  printf("stddev: %.5lf\n", stddev);
 
   conf_width = 1.96 * stddev / sqrt ((double) M);
   interval->min = mean - conf_width;
   interval->max = mean + conf_width;
-  *prng_stream_spawn_time = args.prng_stream_spawn_time;
 
   /* Clean up and exit */
     
@@ -279,9 +265,8 @@ deinit_black_scholes_args (black_scholes_args_t* args)
 {
   if (args != NULL)
     if (args->trials != NULL)
-      {
-	free (args->trials);
-	args->trials = NULL;
-      }
+    {
+      free (args->trials);
+      args->trials = NULL;
+    }
 }
-

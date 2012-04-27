@@ -3,6 +3,12 @@
 
 #include <math.h>
 
+typedef struct __time_arg_t {
+  double t1;
+  double t2;
+  double t3;
+} time_arg_t;
+
 /**
  * In (read-only) and out (write-only) arguments to the function(s)
  * that do(es) Black-Scholes iterations.  This is used for both the
@@ -56,12 +62,10 @@ typedef struct __black_scholes_args_t {
   /**
    * [OUT] time (in seconds) that it takes to call spawn_prng_stream().
    */
-  double prng_stream_spawn_time;
 
-  //int pid; // thread ID
   int nthreads;  // number of threads
-  //int mod;
-  //double* thread_min;
+
+  void** prng_stream;
 } black_scholes_args_t;
 
 // structure for GPU sequential version project
@@ -104,7 +108,6 @@ typedef struct __confidence_interval_t {
  */
 void
 black_scholes (confidence_interval_t* interval,
-	       double* prng_stream_spawn_time,
 	       const double S,
 	       const double E,
 	       const double r,
@@ -112,7 +115,8 @@ black_scholes (confidence_interval_t* interval,
 	       const double T,
 	       const long M,
                const int nthreads,
-	       double* fixedRands);
+	       double* fixedRands,
+          void** prng_stream);
 
 
 #endif /* _black_scholes_h */

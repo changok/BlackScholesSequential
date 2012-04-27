@@ -38,13 +38,13 @@ main (int argc, char* argv[])
   long M = 0;
   char* filename = NULL;
   int nthreads = 1;
-  double t1, t2, prng_stream_spawn_time;
+  double t1, t2;
   int i;
   
   if (argc < 5)
     {
       fprintf (stderr, 
-	       "Usage: ./hw1.x <filename> <trials:M>  <nthreads> [rnd_mode]\n\n");
+         "Usage: ./hw1.x <filename> <trials:M>  <nthreads> [rnd_mode]\n\n");
       exit (EXIT_FAILURE);
     }
   filename = argv[1];
@@ -60,20 +60,20 @@ main (int argc, char* argv[])
    * if M is not, or less than nthreads.
    * */
   if (M < 256) {
-	  printf("Trials(M) is less than minimum requirement, 256,"
-	         "So, we increase M to 256\n");
-	  M = 256;
+     printf("Trials(M) is less than minimum requirement, 256,"
+            "So, we increase M to 256\n");
+     M = 256;
   }
   if (nthreads > M) {
-	  printf("The number of threads is exceed to M"
-	         "So, we set it to M\n");
-	  nthreads = M;
+     printf("The number of threads is exceed to M"
+            "So, we set it to M\n");
+     nthreads = M;
   }
   if (M % nthreads) {
-	M = (M/nthreads+1)*nthreads;
-	printf("nthreads and M is not balanced"
-	       "So, we rebalance M to muliple of nthreads\n"
-	       "M: %ld, nthreads: %d\n", M, nthreads);
+   M = (M/nthreads+1)*nthreads;
+   printf("nthreads and M is not balanced"
+          "So, we rebalance M to muliple of nthreads\n"
+          "M: %ld, nthreads: %d\n", M, nthreads);
   }
 
 
@@ -81,10 +81,14 @@ main (int argc, char* argv[])
    * generate pre-generated random numbers
    * */
   double* preRands = (double*)malloc (sizeof (double) * M);
-  for (i = 0; i < M; i++) {
-    preRands[i] = i/(double)M;
+  if (preRands == NULL) {
+    printf("ERROR: Cannot allocate size of memory: %ld\n"
+           "Begin with smaller size of M.\n", sizeof(double)*M);
+    exit(1);
   }
-
+  for (i = 0; i < M; i++) {
+    preRands[i] = i /(double)M;
+  }
   /* 
    * Make sure init_timer() is only called by one thread,
    * before all the other threads run!
@@ -97,14 +101,20 @@ main (int argc, char* argv[])
   /*
    * Run the benchmark and time it.
    */
+
   t1 = get_seconds ();
+  void** prng_stream = (void**)malloc(sizeof(void*)*nthreads);
+  for( i = 0; i < nthreads; i++) {
+    prng_stream[i] = spawn_prng_stream (i);
+  }
+  double prng_stream_spawn_time = get_seconds() - t1;
   /* 
    * In the parallel case, you may want to set prng_stream_spawn_time to 
    * the max of all the prng_stream_spawn_times, or just take a representative
    * sample... 
    */
-  black_scholes (&interval, &prng_stream_spawn_time,
-                  S, E, r, sigma, T, M, nthreads, preRands);
+  black_scholes (&interval,
+                  S, E, r, sigma, T, M, nthreads, preRands, prng_stream);
   t2 = get_seconds ();
 
   /*
@@ -114,19 +124,21 @@ main (int argc, char* argv[])
    */
 
   printf ("Black-Scholes benchmark:\n"
-	  "------------------------\n"
-	  "S        %g\n"
-	  "E        %g\n"
-	  "r        %g\n"
-	  "sigma    %g\n"
-	  "T        %g\n"
-	  "M        %ld\n",
-	  S, E, r, sigma, T, M);
+     "------------------------\n"
+     //"S        %g\n"
+     //"E        %g\n"
+     //"r        %g\n"
+     //"sigma    %g\n"
+     //"T        %g\n"
+     "Trials     %ld\n",
+     //S, E, r, sigma, T, M);
+      M);
   printf ("Confidence interval: (%g, %g)\n", interval.min, interval.max);
   printf ("Total simulation time: %g seconds\n", t2 - t1);
   printf ("PRNG stream spawn time: %g seconds\n", prng_stream_spawn_time);
  
   free(preRands);
+  free(prng_stream);
   return 0;
 }
 
