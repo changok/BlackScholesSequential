@@ -9,6 +9,11 @@ typedef struct __time_arg_t {
   double t3;
 } time_arg_t;
 
+typedef struct __bs_return_t{
+  double mean;
+  double stddev;
+} bs_return_t;
+
 /**
  * In (read-only) and out (write-only) arguments to the function(s)
  * that do(es) Black-Scholes iterations.  This is used for both the
@@ -66,6 +71,7 @@ typedef struct __black_scholes_args_t {
   int nthreads;  // number of threads
 
   void** prng_stream;
+  int debug_mode;
 } black_scholes_args_t;
 
 // structure for GPU sequential version project
@@ -76,6 +82,7 @@ typedef struct __wrapper_black_scholes_args_t {
   int mod;
   double* thread_means;
   double* fixed_rands;
+  //int debug_mode;
 } wrapper_black_scholes_args_t;
 
 /**
@@ -106,7 +113,8 @@ typedef struct __confidence_interval_t {
  *
  * @note You might need to modify the signature of this function.
  */
-void
+
+bs_return_t
 black_scholes (confidence_interval_t* interval,
 	       const double S,
 	       const double E,
@@ -116,7 +124,8 @@ black_scholes (confidence_interval_t* interval,
 	       const long M,
                const int nthreads,
 	       double* fixedRands,
-          void** prng_stream);
+          void** prng_stream,
+		  const int debug_mode);
 
 
 #endif /* _black_scholes_h */

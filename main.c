@@ -40,16 +40,20 @@ main (int argc, char* argv[])
   int nthreads = 1;
   double t1, t2;
   int i;
+  int debug_mode = 0;
   
   if (argc < 5)
     {
       fprintf (stderr, 
-         "Usage: ./hw1.x <filename> <trials:M>  <nthreads> [rnd_mode]\n\n");
+         "Usage: ./hw1.x <filename> <trials:M>  <nthreads> [rnd_mode] [debug_mode]\n\n");
       exit (EXIT_FAILURE);
     }
   filename = argv[1];
   nthreads = to_int (argv[3]);
   rnd_mode = to_int(argv[4]);
+  if (argv[5]!= NULL) {
+    debug_mode = to_int(argv[5]);
+  }
 
   parse_parameters (&S, &E, &r, &sigma, &T, &M, filename);
 
@@ -60,18 +64,18 @@ main (int argc, char* argv[])
    * if M is not, or less than nthreads.
    * */
   if (M < 256) {
-     printf("Trials(M) is less than minimum requirement, 256,"
+     printf("Trials(M) is less than minimum requirement, 256,\n"
             "So, we increase M to 256\n");
      M = 256;
   }
   if (nthreads > M) {
-     printf("The number of threads is exceed to M"
+     printf("The number of threads is exceed to M\n"
             "So, we set it to M\n");
      nthreads = M;
   }
   if (M % nthreads) {
    M = (M/nthreads+1)*nthreads;
-   printf("nthreads and M is not balanced"
+   printf("nthreads and M is not balanced\n"
           "So, we rebalance M to muliple of nthreads\n"
           "M: %ld, nthreads: %d\n", M, nthreads);
   }
@@ -88,7 +92,11 @@ main (int argc, char* argv[])
   }
   for (i = 0; i < M; i++) {
     preRands[i] = i /(double)M;
+	if (debug_mode > 0 && (i < 10 || i > M-10))
+      printf("RND%d: %.6lf, ", i, preRands[i]);
   }
+  if (debug_mode > 0)
+  	printf("\n");
   /* 
    * Make sure init_timer() is only called by one thread,
    * before all the other threads run!
@@ -113,8 +121,8 @@ main (int argc, char* argv[])
    * the max of all the prng_stream_spawn_times, or just take a representative
    * sample... 
    */
-  black_scholes (&interval,
-                  S, E, r, sigma, T, M, nthreads, preRands, prng_stream);
+  bs_return_t ret = black_scholes (&interval,
+                  S, E, r, sigma, T, M, nthreads, preRands, prng_stream, debug_mode);
   t2 = get_seconds ();
 
   /*
@@ -123,19 +131,40 @@ main (int argc, char* argv[])
    * concatenates them if they are separated only by whitespace.
    */
 
-  printf ("Black-Scholes benchmark:\n"
-     "------------------------\n"
-     //"S        %g\n"
-     //"E        %g\n"
-     //"r        %g\n"
-     //"sigma    %g\n"
-     //"T        %g\n"
-     "Trials     %ld\n",
-     //S, E, r, sigma, T, M);
-      M);
-  printf ("Confidence interval: (%g, %g)\n", interval.min, interval.max);
-  printf ("Total simulation time: %g seconds\n", t2 - t1);
-  printf ("PRNG stream spawn time: %g seconds\n", prng_stream_spawn_time);
+  if (nthreads == 1) {
+     printf ("Black-Scholes (Ver. Sequential) benchmark:\n");
+  }
+  else if (nthreads > 1) {
+     printf ("Black-Scholes (Ver. Threads: %d) benchmark:\n", nthreads);
+  }
+  printf(
+      "--------------------------------------------\n"
+      //"S                           %g\n"
+      //"E                           %g\n"
+      //"r                           %g\n"
+      //"sigma                       %g\n"
+      //"T                           %g\n"
+      "Trials                       	%ld\n",
+       //S, E, r, sigma, T, M);
+       M);
+  printf ("Confidence interval:(%g, %g)\n"
+      "Average Trials(BS):          	%10lf\n"
+      "Standard Deviation:          	%10lf\n"
+      "--------------------------------------------\n"
+      "Total simulation time (sec): 	%10lf\n"
+      "PRNG stream spawn time (sec):	%10lf\n"
+      "BS computation time (sec):   	%10lf\n\n"
+      , interval.min, interval.max
+      , ret.mean
+      , ret.stddev
+      , t2 - t1
+      , prng_stream_spawn_time
+      , (t2 - t1) - prng_stream_spawn_time);
+  //printf ("Average Trails(BS): %.5lf\n", ret.mean);
+  //printf ("Standard Devviation: %.5lf\n", ret.stddev);
+  //printf ("Total simulation time: %g seconds\n", t2 - t1);
+  //printf ("PRNG stream spawn time: %g seconds\n", prng_stream_spawn_time);
+  //printf ("BS computation time: %g seconds\n", (t2-t1) - prng_stream_spawn_time);
  
   free(preRands);
   free(prng_stream);

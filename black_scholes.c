@@ -44,6 +44,15 @@ mock_black_scholes_value (const double S,
   return  gaussian_random_number;
 }
 
+double
+trunc (double target) {
+  if (target < 0.0000000005 && target > 0)
+    target = 0.0;
+  else if (target > -0.0000000005 && target <0)
+    target = 0.0;
+
+  return target;
+}
 /**
  * Compute the standard deviation of trials[0 .. M-1].
  */
@@ -52,20 +61,26 @@ black_scholes_stddev (void* the_args)
 {
   black_scholes_args_t* args = (black_scholes_args_t*) the_args;
   const double mean = args->mean;
+  const int debug_mode = args->debug_mode;
   const int M = args->M;
   double variance = 0.0;
   int k;
 
   for (k = 0; k < M; k++)
     {
-      const double diff = args->trials[k] - mean;
+      double diff = args->trials[k] - mean;
+	  diff = trunc (diff);
       /*
        * Just like when computing the mean, we scale each term of this
        * sum in order to avoid overflow.
        */
-      variance += diff * diff / (double) (M-1);
-    }
+	  double ins = diff * diff / (double) (M-1);
+      variance += ins;
 
+	  if (debug_mode > 0 && (k < 10 || k > M-10))
+	  	printf("VAR%d: %.9lf, ", k, ins);
+    }
+  
   args->variance = variance;
   return sqrt (variance);
 }
@@ -87,6 +102,7 @@ black_scholes_thread (void* the_args)
   const double r = args->r;
   const double sigma = args->sigma;
   const double T = args->T;
+  const int debug_mode = args->debug_mode;
   
   const int nthreads = args->nthreads;
   // pid : thread id
@@ -144,6 +160,8 @@ black_scholes_thread (void* the_args)
       // error found: somehow floating type turns out to be integer type
       // lost floating number under .0
       trials[k + pad] = trial;
+	  if (debug_mode > 0 && (k+pad < 10 || k+pad > M-10))
+	    printf("TRIAL%d: %.6lf, ", k+pad, trial);
       /*
        * We scale each term of the sum in order to avoid overflow. 
        * This ensures that mean is never larger than the max
@@ -193,7 +211,7 @@ black_scholes_kernel (void* the_args, double* fixedRands)
 
   // combine results from each threads
   for (i = 0; i < nthreads; i++) {
-    printf("thread_mean[%d]: %.5lf\n", i, thread_means[i]);
+    //printf("thread_mean[%d]: %.5lf\n", i, thread_means[i]);
     args->mean += thread_means[i];
   }
 
@@ -205,7 +223,7 @@ black_scholes_kernel (void* the_args, double* fixedRands)
 }
 
 
-void
+bs_return_t
 black_scholes (confidence_interval_t* interval,
           const double S,
           const double E,
@@ -215,13 +233,15 @@ black_scholes (confidence_interval_t* interval,
           const long M,
           const int nthreads,
           double* fixedRands,
-          void** prng_stream)
+          void** prng_stream,
+		  const int debug_mode)
 {
   black_scholes_args_t args;
   double mean = 0.0;
   double stddev = 0.0;
   double conf_width = 0.0;
   double* trials = NULL;
+  bs_return_t ret;
 
   assert (M > 0);
   trials = (double*) malloc (M * sizeof (double));
@@ -242,22 +262,29 @@ black_scholes (confidence_interval_t* interval,
   args.variance = 0.0;
   args.nthreads = nthreads;
   args.prng_stream = prng_stream;
+  args.debug_mode = debug_mode;
 
   (void) black_scholes_kernel (&args, fixedRands);
   mean = args.mean;
-  printf("mean: %.5lf\n", mean);
+  if (debug_mode > 0)
+  	printf("\n");
   stddev = black_scholes_stddev (&args);
-  printf("stddev: %.5lf\n", stddev);
+  if (debug_mode > 0)
+  	printf("\n");
 
   conf_width = 1.96 * stddev / sqrt ((double) M);
   interval->min = mean - conf_width;
   interval->max = mean + conf_width;
 
+  ret.mean = mean;
+  ret.stddev = stddev;
   /* Clean up and exit */
     
   deinit_black_scholes_args (&args);
   free(args.trials);
+  return ret;
 }
+
 
 
 void

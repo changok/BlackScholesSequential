@@ -57,32 +57,80 @@ clean:
 	make -C dcmt0.4/lib clean
 	rm -f $(HW1_C_OBJS) $(HW1_EXE)
 
-seq_run:
-	for number in 256 4096 65536 17367040; do \
-		./$(HW1_EXE) $(PARAM) $$number 1 0; \
+seq_4096_run:
+	number=1 ; while [[ $$number -le 10 ]] ; \
+	do \
+		./$(HW1_EXE) $(PARAM) 4096 1 0; \
+		((number = number + 1)) ; \
 	done
 
-seq_corr_only1:
-	for number in 256 4096 65536 17367040; do \
-		./$(HW1_EXE) $(PARAM) $$number 1 1; \
+seq_65536_run:
+	number=1 ; while [[ $$number -le 10 ]] ; \
+	do \
+		./$(HW1_EXE) $(PARAM) 65536 1 0; \
+		((number = number + 1)) ; \
 	done
 
-seq_corr_fixed:
+seq_17367040_run:
+	number=1 ; while [[ $$number -le 10 ]] ; \
+	do \
+		./$(HW1_EXE) $(PARAM) 17367040 1 0; \
+		((number = number + 1)) ; \
+	done
+
+
+mpi4_4096_run:
+	number=1 ; while [[ $$number -le 10 ]] ; \
+	do \
+		./$(HW1_EXE) $(PARAM) 4096 4 0; \
+		((number = number + 1)) ; \
+	done
+
+mpi4_65536_run:
+	number=1 ; while [[ $$number -le 10 ]] ; \
+	do \
+		./$(HW1_EXE) $(PARAM) 65536 4 0; \
+		((number = number + 1)) ; \
+	done
+
+mpi4_17367040_run:
+	number=1 ; while [[ $$number -le 10 ]] ; \
+	do \
+		./$(HW1_EXE) $(PARAM) 17367040 4 0; \
+		((number = number + 1)) ; \
+	done
+
+mpi8_4096_run:
+	number=1 ; while [[ $$number -le 10 ]] ; \
+	do \
+		./$(HW1_EXE) $(PARAM) 4096 8 0; \
+		((number = number + 1)) ; \
+	done
+
+mpi8_65536_run:
+	number=1 ; while [[ $$number -le 10 ]] ; \
+	do \
+		./$(HW1_EXE) $(PARAM) 65536 8 0; \
+		((number = number + 1)) ; \
+	done
+
+mpi8_17367040_run:
+	number=1 ; while [[ $$number -le 10 ]] ; \
+	do \
+		./$(HW1_EXE) $(PARAM) 17367040 8 0; \
+		((number = number + 1)) ; \
+	done
+
+corr_fixed:
 	for number in 256 4096 65536 17367040; do \
 		./$(HW1_EXE) $(PARAM) $$number 1 2; \
+		./$(HW1_EXE) $(PARAM) $$number 4 2; \
+		./$(HW1_EXE) $(PARAM) $$number 8 2; \
 	done
-
-mpi_run:
+	
+corr_only1:
 	for number in 256 4096 65536 17367040; do \
-		./$(HW1_EXE) $(PARAM) $$number 2 0; \
-	done
-
-mpi_corr_only1:
-	for number in 256 4096 65536 17367040; do \
-		./$(HW1_EXE) $(PARAM) $$number 2 1; \
-	done
-
-mpi_corr_fixed:
-	for number in 256 4096 65536 17367040; do \
-		./$(HW1_EXE) $(PARAM) $$number 2 2; \
+		./$(HW1_EXE) $(PARAM) $$number 1 1; \
+		./$(HW1_EXE) $(PARAM) $$number 4 1; \
+		./$(HW1_EXE) $(PARAM) $$number 8 1; \
 	done
