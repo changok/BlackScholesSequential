@@ -92,11 +92,9 @@ main (int argc, char* argv[])
   }
   for (i = 0; i < M; i++) {
     preRands[i] = i /(double)M;
-	if (debug_mode > 0 && (i < 10 || i > M-10))
+    if (debug_mode > 0 && (i < 10 || i > M-10))
       printf("RND%d: %.6lf, ", i, preRands[i]);
   }
-  if (debug_mode > 0)
-  	printf("\n");
   /* 
    * Make sure init_timer() is only called by one thread,
    * before all the other threads run!
@@ -139,32 +137,27 @@ main (int argc, char* argv[])
   }
   printf(
       "--------------------------------------------\n"
-      //"S                           %g\n"
-      //"E                           %g\n"
-      //"r                           %g\n"
-      //"sigma                       %g\n"
-      //"T                           %g\n"
-      "Trials                       	%ld\n",
-       //S, E, r, sigma, T, M);
-       M);
-  printf ("Confidence interval:(%g, %g)\n"
+      "Trials                       	%ld\n"
+      "Confidence interval:(%g, %g)\n"
       "Average Trials(BS):          	%10lf\n"
       "Standard Deviation:          	%10lf\n"
       "--------------------------------------------\n"
       "Total simulation time (sec): 	%10lf\n"
       "PRNG stream spawn time (sec):	%10lf\n"
       "BS computation time (sec):   	%10lf\n\n"
+      //"S                           %g\n"
+      //"E                           %g\n"
+      //"r                           %g\n"
+      //"sigma                       %g\n"
+      //"T                           %g\n"
+      //S, E, r, sigma, T
+      , M
       , interval.min, interval.max
       , ret.mean
       , ret.stddev
       , t2 - t1
       , prng_stream_spawn_time
       , (t2 - t1) - prng_stream_spawn_time);
-  //printf ("Average Trails(BS): %.5lf\n", ret.mean);
-  //printf ("Standard Devviation: %.5lf\n", ret.stddev);
-  //printf ("Total simulation time: %g seconds\n", t2 - t1);
-  //printf ("PRNG stream spawn time: %g seconds\n", prng_stream_spawn_time);
-  //printf ("BS computation time: %g seconds\n", (t2-t1) - prng_stream_spawn_time);
  
   free(preRands);
   free(prng_stream);
